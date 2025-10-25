@@ -1,0 +1,28 @@
+# Build outputs
+.next
+out
+dist
+build
+.mastra
+
+# Dependencies
+node_modules
+
+# Cache
+.turbo
+.cache
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Generated files
+*.generated.*
