@@ -26,8 +26,8 @@ export const translationScorer = createScorer({
   },
 })
   .preprocess(({ run }) => {
-    const userText = (run.input?.inputMessages?.[0]?.content as string) || '';
-    const assistantText = (run.output?.[0]?.content as string) || '';
+    const userText = run.input?.inputMessages?.[0]?.content! || '';
+    const assistantText = run.output?.[0]?.content || '';
     return { userText, assistantText };
   })
   .analyze({
