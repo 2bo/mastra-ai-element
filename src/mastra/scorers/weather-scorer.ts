@@ -11,6 +11,14 @@ export const toolCallAppropriatenessScorer = createToolCallAccuracyScorerCode({
 export const completenessScorer = createCompletenessScorer();
 
 // Custom LLM-judged scorer: evaluates if non-English locations are translated appropriately
+
+interface AnalyzeResult {
+  nonEnglish: boolean;
+  translated: boolean;
+  confidence: number;
+  explanation: string;
+}
+
 export const translationScorer = createScorer({
   name: 'Translation Quality',
   description:
@@ -26,8 +34,8 @@ export const translationScorer = createScorer({
   },
 })
   .preprocess(({ run }) => {
-    const userText = run.input?.inputMessages?.[0]?.content! || '';
-    const assistantText = run.output?.[0]?.content || '';
+    const userText = String(run.input?.inputMessages?.[0]?.content ?? '');
+    const assistantText = String(run.output?.[0]?.content ?? '');
     return { userText, assistantText };
   })
   .analyze({
@@ -63,14 +71,14 @@ export const translationScorer = createScorer({
         `,
   })
   .generateScore(({ results }) => {
-    const r = (results as any)?.analyzeStepResult || {};
+    const r = (results.analyzeStepResult ?? {}) as Partial<AnalyzeResult>;
     if (!r.nonEnglish) return 1; // If not applicable, full credit
     if (r.translated)
       return Math.max(0, Math.min(1, 0.7 + 0.3 * (r.confidence ?? 1)));
     return 0; // Non-English but not translated
   })
   .generateReason(({ results, score }) => {
-    const r = (results as any)?.analyzeStepResult || {};
+    const r = (results.analyzeStepResult ?? {}) as Partial<AnalyzeResult>;
     return `Translation scoring: nonEnglish=${r.nonEnglish ?? false}, translated=${r.translated ?? false}, confidence=${r.confidence ?? 0}. Score=${score}. ${r.explanation ?? ''}`;
   });
 

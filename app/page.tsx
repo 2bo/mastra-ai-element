@@ -19,7 +19,7 @@ export default function Chat() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      sendMessage({ text: input });
+      void sendMessage({ text: input });
       setInput('');
     }
   };

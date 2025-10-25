@@ -3,9 +3,15 @@ import { mastra } from '@/src/mastra';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+interface Message {
+  role: string;
+  content: string;
+}
+
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    const body = (await req.json()) as { messages: Message[] };
+    const { messages } = body;
 
     const weatherAgent = mastra.getAgent('weatherAgent');
 
