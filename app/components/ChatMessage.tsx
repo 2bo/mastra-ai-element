@@ -1,5 +1,5 @@
-import type { MessagePart } from '@ai-sdk/react';
 import { memo } from 'react';
+import type { MessagePart } from '../types/chat';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant' | 'system';

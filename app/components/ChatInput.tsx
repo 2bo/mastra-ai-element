@@ -30,7 +30,10 @@ export const ChatInput = memo(function ChatInput({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-3 p-5 border-t border-gray-200">
+    <form
+      onSubmit={handleSubmit}
+      className="flex gap-3 p-5 border-t border-gray-200"
+    >
       <input
         type="text"
         value={value}

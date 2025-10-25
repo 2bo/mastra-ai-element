@@ -1,4 +1,6 @@
-import type { MessagePart } from '@ai-sdk/react';
+import type { UIMessagePart, UIDataTypes, UITools } from 'ai';
+
+export type MessagePart = UIMessagePart<UIDataTypes, UITools>;
 
 export interface Message {
   id: string;
