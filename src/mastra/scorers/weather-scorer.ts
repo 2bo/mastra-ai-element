@@ -86,8 +86,7 @@ export const translationScorer = createScorer({
       confidence = 1,
     } = analyzeResult ?? {};
     if (!nonEnglish) return 1; // If not applicable, full credit
-    if (translated)
-      return Math.max(0, Math.min(1, 0.7 + 0.3 * confidence));
+    if (translated) return Math.max(0, Math.min(1, 0.7 + 0.3 * confidence));
     return 0; // Non-English but not translated
   })
   .generateReason(({ results, score }) => {

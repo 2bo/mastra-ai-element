@@ -5,6 +5,7 @@ Mastra AIフレームワークを使用したNext.js天気チャットアプリ�
 ## 開発コマンド
 
 ### Next.js アプリケーション
+
 ```bash
 npm run dev          # 開発サーバー起動 (http://localhost:3000)
 npm run build        # 本番ビルド
@@ -12,6 +13,7 @@ npm run start        # 本番サーバー起動
 ```
 
 ### Mastra CLI
+
 ```bash
 npm run mastra:dev   # Mastraの開発モード
 npm run mastra:build # Mastraのビルド
@@ -19,6 +21,7 @@ npm run mastra:start # Mastraサーバー起動
 ```
 
 ### コード品質
+
 ```bash
 npm run typecheck    # TypeScript型チェック
 npm run lint         # ESLintによるリンティング
@@ -43,53 +46,68 @@ npm run format:check # フォーマットのチェックのみ
 ### Next.js UI層 (`app/`)
 
 - **API Route** (`api/chat/route.ts`): Mastra weatherAgentと統合し、AI SDKストリーミング応答を返す
+  - `mastra.getAgent('weatherAgent')`でエージェントを取得
+  - `stream.toUIMessageStreamResponse()`でAI SDK形式のレスポンスを返す
 - **メインページ** (`page.tsx`): `@ai-sdk/react`の`useChat`フックを使用したクライアントサイドチャットUI
-- **コンポーネント** (`components/`): ChatMessage、ChatInput、ChatHeader、LoadingIndicator、EmptyStateなど再利用可能なUIコンポーネント
+- **コンポーネント** (`components/`):
+  - **Chat Components** (`chat/`): ChatContainer、ChatHeader、ChatConversation、ChatInput、ChatMessageItemなど再利用可能なチャットUIコンポーネント
+  - **AI Elements** (`ai-elements/`): Response、Loader、Conversation、Message、PromptInputなどAI統合コンポーネント
+  - **UI Components** (`ui/`): Button、Avatar、Dialog、Input、Selectなど基本UIコンポーネント（Radix UI + Tailwind CSS）
 
 ### データフロー
 
-1. ユーザーが`app/page.tsx`でメッセージを送信
-2. `@ai-sdk/react`の`useChat`が`/api/chat`にPOSTリクエスト
-3. APIルートが`weatherAgent`を取得し、メッセージをストリーミング
-4. エージェントは必要に応じて`weatherTool`を呼び出し、Open-Meteo APIから天気データを取得
-5. ストリーミング応答がUIに返され、リアルタイムで表示
-6. エージェントの相互作用はスコアラーによって評価され、observabilityストアに記録
+1. ユーザーが`app/page.tsx`のChatInputコンポーネントでメッセージを送信（`PromptInputMessage`型）
+2. `@ai-sdk/react`の`useChat`フックが`/api/chat`にPOSTリクエストを送信
+3. APIルート（`api/chat/route.ts`）が`mastra.getAgent('weatherAgent')`でエージェントを取得
+4. エージェントが`stream(messages, { format: 'aisdk' })`でメッセージ処理を開始
+5. エージェントは必要に応じて`weatherTool`を呼び出し、Open-Meteo APIから天気データを取得
+6. `stream.toUIMessageStreamResponse()`でAI SDK形式のストリーミングレスポンスを返す
+7. ストリーミング応答がChatConversationコンポーネントでリアルタイムに表示
+8. エージェントの相互作用はスコアラーによって評価され、observabilityストアに記録
 
 ## 重要な実装詳細
 
 ### 環境変数
+
 `.env`ファイルが必要:
+
 ```
 OPENAI_API_KEY=your-api-key
 ```
 
 ### TypeScript設定
+
 - パスエイリアス: `@/*`は`./`にマップ
 - ES2022ターゲット、strictモード有効
 - bundlerモジュール解決
 
 ### スタイリング
+
 - Tailwind CSS 4.x使用
 - カスタムグラデーション: `bg-gradient-primary`と`text-primary`
 - レスポンシブデザインで最大幅3xl
 
 ### Mastra Agent設定
+
 - エージェントのメモリは`file:../mastra.db`に保存（`.mastra/output`ディレクトリ相対）
 - 3つのスコアラーがすべて100%サンプリングレート（`ratio: 1`）で有効
 - エージェントは英語以外の地名を翻訳するよう指示されている
 
 ### コード品質の自動化
+
 PostToolUseフックが`.claude/settings.json`に設定されており、TypeScript/JavaScriptファイルの編集・作成時に自動的に`lint:fix`と`format`を実行
 
 ## 技術スタック
+
 - **フレームワーク**: Next.js 16 (React 19)
-- **AI**: Mastra Core 0.23.1, Vercel AI SDK
+- **AI**: Mastra Core 0.23.1, Vercel AI SDK 5, @ai-sdk/react
 - **データベース**: LibSQL (メモリまたはファイルベース)
-- **スタイリング**: Tailwind CSS 4
+- **UIコンポーネント**: Radix UI (Avatar, Dialog, Dropdown Menu, Select, Tooltip等)
+- **スタイリング**: Tailwind CSS 4, class-variance-authority, tailwindcss-animate
+- **ユーティリティ**: lucide-react (アイコン), cmdk (コマンドメニュー), streamdown (ストリーミングマークダウン), use-stick-to-bottom (スクロール制御)
 - **開発ツール**: TypeScript, ESLint, Prettier
 - **Node.js**: >=20.9.0
 
-
 ## 言語
-ユーザーとのやりとりは日本語でします。
 
+ユーザーとのやりとりは日本語でします。
