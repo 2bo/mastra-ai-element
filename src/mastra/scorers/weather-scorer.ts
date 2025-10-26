@@ -34,8 +34,14 @@ export const translationScorer = createScorer({
   },
 })
   .preprocess(({ run }) => {
-    const userText = String(run.input?.inputMessages?.[0]?.content ?? '');
-    const assistantText = String(run.output?.[0]?.content ?? '');
+    const inputMessagesSource = run.input?.inputMessages;
+    const inputMessages = Array.isArray(inputMessagesSource)
+      ? inputMessagesSource
+      : [];
+    const outputMessages = Array.isArray(run.output) ? run.output : [];
+
+    const userText = String(inputMessages[0]?.content ?? '');
+    const assistantText = String(outputMessages[0]?.content ?? '');
     return { userText, assistantText };
   })
   .analyze({
@@ -71,15 +77,30 @@ export const translationScorer = createScorer({
         `,
   })
   .generateScore(({ results }) => {
-    const r = (results.analyzeStepResult ?? {}) as Partial<AnalyzeResult>;
-    if (!r.nonEnglish) return 1; // If not applicable, full credit
-    if (r.translated)
-      return Math.max(0, Math.min(1, 0.7 + 0.3 * (r.confidence ?? 1)));
+    const analyzeResult = results.analyzeStepResult as
+      | AnalyzeResult
+      | undefined;
+    const {
+      nonEnglish = false,
+      translated = false,
+      confidence = 1,
+    } = analyzeResult ?? {};
+    if (!nonEnglish) return 1; // If not applicable, full credit
+    if (translated)
+      return Math.max(0, Math.min(1, 0.7 + 0.3 * confidence));
     return 0; // Non-English but not translated
   })
   .generateReason(({ results, score }) => {
-    const r = (results.analyzeStepResult ?? {}) as Partial<AnalyzeResult>;
-    return `Translation scoring: nonEnglish=${r.nonEnglish ?? false}, translated=${r.translated ?? false}, confidence=${r.confidence ?? 0}. Score=${score}. ${r.explanation ?? ''}`;
+    const analyzeResult = results.analyzeStepResult as
+      | AnalyzeResult
+      | undefined;
+    const {
+      nonEnglish = false,
+      translated = false,
+      confidence = 0,
+      explanation = '',
+    } = analyzeResult ?? {};
+    return `Translation scoring: nonEnglish=${nonEnglish}, translated=${translated}, confidence=${confidence}. Score=${score}. ${explanation}`;
   });
 
 export const scorers = {

@@ -43,7 +43,7 @@ const fetchWeather = createStep({
     const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(inputData.city)}&count=1`;
     const geocodingResponse = await fetch(geocodingUrl);
     const geocodingData = (await geocodingResponse.json()) as {
-      results: { latitude: number; longitude: number; name: string }[];
+      results?: { latitude: number; longitude: number; name: string }[];
     };
 
     if (!geocodingData.results?.[0]) {
@@ -93,9 +93,6 @@ const planActivities = createStep({
     const forecast = inputData;
 
     const agent = mastra.getAgent('weatherAgent');
-    if (!agent) {
-      throw new Error('Weather agent not found');
-    }
 
     const prompt = `Based on the following weather forecast for ${forecast.location}, suggest appropriate activities:
       ${JSON.stringify(forecast, null, 2)}
