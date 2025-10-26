@@ -8,10 +8,14 @@ import {
   ChatHeader,
   ChatInput,
 } from '@/components/chat';
-import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
+import {
+  PromptInputProvider,
+  type PromptInputMessage,
+} from '@/components/ai-elements/prompt-input';
 
 export default function ChatPage() {
-  const { messages, sendMessage, status } = useChat();
+  const { messages, sendMessage, status, setMessages, stop, regenerate } =
+    useChat();
   const [draft, setDraft] = useState('');
 
   const handleSubmit = (message: PromptInputMessage) => {
@@ -20,23 +24,44 @@ export default function ChatPage() {
       return;
     }
 
-    void sendMessage({ text: messageText });
+    const files = message.files ?? [];
+    void sendMessage({
+      text: messageText,
+      files: files.map((f) => ({
+        type: 'file' as const,
+        url: f.url,
+        mediaType: f.mediaType,
+        filename: f.filename,
+      })),
+    });
     setDraft('');
   };
 
+  const handleClearMessages = () => {
+    setMessages([]);
+  };
+
   return (
-    <ChatContainer>
-      <ChatHeader
-        description="Ask me about the weather in any location"
-        title="Weather Chat Assistant"
-      />
-      <ChatConversation messages={messages} status={status} />
-      <ChatInput
-        onChange={setDraft}
-        onSubmit={handleSubmit}
-        status={status}
-        value={draft}
-      />
-    </ChatContainer>
+    <PromptInputProvider initialInput={draft}>
+      <ChatContainer>
+        <ChatHeader
+          description="Ask me about the weather, attach images, or use advanced features"
+          title="AI Chat Assistant (Enhanced)"
+        />
+        <ChatConversation
+          messages={messages}
+          onRegenerate={regenerate}
+          onStop={stop}
+          status={status}
+        />
+        <ChatInput
+          onChange={setDraft}
+          onClearMessages={handleClearMessages}
+          onSubmit={handleSubmit}
+          status={status}
+          value={draft}
+        />
+      </ChatContainer>
+    </PromptInputProvider>
   );
 }
