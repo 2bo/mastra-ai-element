@@ -1,11 +1,6 @@
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
-import {
-  AlertCircleIcon,
-  MessageSquareIcon,
-  RefreshCwIcon,
-  StopCircleIcon,
-} from 'lucide-react';
+import { AlertCircleIcon, MessageSquareIcon } from 'lucide-react';
 import {
   Conversation,
   ConversationContent,
@@ -13,8 +8,8 @@ import {
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import { Loader } from '@/components/ai-elements/loader';
-import { Button } from '@/components/ui/button';
 import { ChatMessageItem } from './chat-message-item';
+import { Button } from '@/components/ui/button';
 
 type ChatMessage = UseChatHelpers<UIMessage>['messages'][number];
 
@@ -34,13 +29,7 @@ export function ChatConversation({
   const hasMessages = messages.length > 0;
   const isLoading = status === 'submitted' || status === 'streaming';
   const isError = status === 'error';
-  const lastMessage = messages[messages.length - 1];
-  const canRegenerate =
-    lastMessage?.role === 'assistant' &&
-    status !== 'submitted' &&
-    status !== 'streaming' &&
-    onRegenerate;
-  const canStop = (isLoading && onStop) ?? false;
+  const canRegenerate = typeof onRegenerate === 'function' && hasMessages;
 
   return (
     <Conversation
@@ -51,41 +40,14 @@ export function ChatConversation({
     >
       <ConversationContent>
         {hasMessages ? (
-          <>
-            {messages.map((message) => (
-              <ChatMessageItem key={message.id} message={message} />
-            ))}
-
-            {Boolean(canRegenerate ?? canStop) && (
-              <div className="flex items-center justify-center gap-2 py-4">
-                {canRegenerate && (
-                  <Button
-                    onClick={() => void onRegenerate()}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <RefreshCwIcon className="mr-2 size-4" />
-                    Regenerate
-                  </Button>
-                )}
-                {canStop && onStop && (
-                  <Button
-                    onClick={() => void onStop()}
-                    size="sm"
-                    variant="destructive"
-                  >
-                    <StopCircleIcon className="mr-2 size-4" />
-                    Stop
-                  </Button>
-                )}
-              </div>
-            )}
-          </>
+          messages.map((message) => (
+            <ChatMessageItem key={message.id} message={message} />
+          ))
         ) : (
           <ConversationEmptyState
-            description="Ask me about the weather anywhere in the world, attach images, or use advanced features"
+            description="Ask me about the weather anywhere in the world"
             icon={<MessageSquareIcon className="size-12" aria-hidden="true" />}
-            title="Welcome to AI Chat!"
+            title="Welcome!"
           />
         )}
 
@@ -97,6 +59,19 @@ export function ChatConversation({
           >
             <Loader />
             <span className="sr-only">Processing your message...</span>
+            {onStop && (
+              <Button
+                className="ml-4"
+                onClick={() => {
+                  void onStop?.();
+                }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Stop
+              </Button>
+            )}
           </div>
         )}
 
@@ -110,6 +85,21 @@ export function ChatConversation({
             <p className="text-sm">
               An error occurred while processing your message. Please try again.
             </p>
+          </div>
+        )}
+
+        {canRegenerate && !isLoading && (
+          <div className="flex justify-center py-4">
+            <Button
+              onClick={() => {
+                void onRegenerate?.();
+              }}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              Regenerate response
+            </Button>
           </div>
         )}
       </ConversationContent>
