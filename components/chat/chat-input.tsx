@@ -14,24 +14,36 @@ import {
   PromptInputModelSelectContent,
   PromptInputModelSelectItem,
   PromptInputModelSelectValue,
-  PromptInputActionMenu,
-  PromptInputActionMenuTrigger,
-  PromptInputActionMenuContent,
-  PromptInputActionMenuItem,
   PromptInputHoverCard,
   PromptInputHoverCardTrigger,
   PromptInputHoverCardContent,
   PromptInputHeader,
   PromptInputSpeechButton,
+  PromptInputCommand,
+  PromptInputCommandInput,
+  PromptInputCommandList,
+  PromptInputCommandEmpty,
+  PromptInputCommandGroup,
+  PromptInputCommandItem,
   usePromptInputAttachments,
   type PromptInputMessage,
 } from '@/components/ai-elements/prompt-input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import {
   ImageIcon,
   SettingsIcon,
   SparklesIcon,
   TrashIcon,
   InfoIcon,
+  TrendingUpIcon,
+  CodeIcon,
+  PlaneIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -41,6 +53,10 @@ interface ChatInputProps {
   onSubmit: (message: PromptInputMessage) => void;
   status: UseChatHelpers<UIMessage>['status'];
   onClearMessages?: () => void;
+  selectedModel?: string;
+  onModelChange?: (model: string) => void;
+  selectedAgent?: string;
+  onAgentChange?: (agent: string) => void;
 }
 
 export function ChatInput({
@@ -49,9 +65,53 @@ export function ChatInput({
   onSubmit,
   status,
   onClearMessages,
+  selectedModel: externalSelectedModel,
+  onModelChange,
+  selectedAgent: externalSelectedAgent,
+  onAgentChange,
 }: ChatInputProps) {
   const isDisabled = status === 'submitted' || status === 'streaming';
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [internalSelectedModel, setInternalSelectedModel] =
+    useState('gpt-4o-mini');
+  const [internalSelectedAgent, setInternalSelectedAgent] = useState(
+    'financialAnalystAgent'
+  );
+  const [showCommands, setShowCommands] = useState(false);
+  const selectedModel = externalSelectedModel ?? internalSelectedModel;
+  const setSelectedModel = onModelChange ?? setInternalSelectedModel;
+  const selectedAgent = externalSelectedAgent ?? internalSelectedAgent;
+  const setSelectedAgent = onAgentChange ?? setInternalSelectedAgent;
+
+  // Handle command palette visibility
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = event.target.value;
+    onChange(newValue);
+    // Show commands when user types /
+    setShowCommands(newValue.startsWith('/') && newValue.length > 0);
+  };
+
+  // Handle command selection
+  const handleCommandSelect = (command: string) => {
+    switch (command) {
+      case 'financial':
+        setSelectedAgent('financialAnalystAgent');
+        onChange('');
+        break;
+      case 'code':
+        setSelectedAgent('codeReviewAgent');
+        onChange('');
+        break;
+      case 'travel':
+        setSelectedAgent('travelPlanningAgent');
+        onChange('');
+        break;
+      case 'clear':
+        onClearMessages?.();
+        onChange('');
+        break;
+    }
+    setShowCommands(false);
+  };
 
   return (
     <div className="border-t border-gray-200 p-4">
@@ -84,6 +144,25 @@ export function ChatInput({
           </div>
           <div className="flex items-center gap-2">
             <PromptInputModelSelect
+              value={selectedAgent}
+              onValueChange={setSelectedAgent}
+            >
+              <PromptInputModelSelectTrigger className="w-[200px]">
+                <PromptInputModelSelectValue placeholder="Select agent" />
+              </PromptInputModelSelectTrigger>
+              <PromptInputModelSelectContent>
+                <PromptInputModelSelectItem value="financialAnalystAgent">
+                  Financial Analyst
+                </PromptInputModelSelectItem>
+                <PromptInputModelSelectItem value="codeReviewAgent">
+                  Code Review Specialist
+                </PromptInputModelSelectItem>
+                <PromptInputModelSelectItem value="travelPlanningAgent">
+                  Travel Planning Expert
+                </PromptInputModelSelectItem>
+              </PromptInputModelSelectContent>
+            </PromptInputModelSelect>
+            <PromptInputModelSelect
               value={selectedModel}
               onValueChange={setSelectedModel}
             >
@@ -102,28 +181,68 @@ export function ChatInput({
                 </PromptInputModelSelectItem>
               </PromptInputModelSelectContent>
             </PromptInputModelSelect>
-            <PromptInputActionMenu>
-              <PromptInputActionMenuTrigger>
-                <SettingsIcon className="size-4" />
-              </PromptInputActionMenuTrigger>
-              <PromptInputActionMenuContent align="end">
-                <PromptInputActionMenuItem
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="size-8">
+                  <SettingsIcon className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
                   onClick={onClearMessages}
                   className="text-destructive"
                 >
                   <TrashIcon className="mr-2 size-4" />
                   Clear conversation
-                </PromptInputActionMenuItem>
-              </PromptInputActionMenuContent>
-            </PromptInputActionMenu>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </PromptInputHeader>
 
         <PromptInputBody>
           <AttachmentsDisplay />
+          {showCommands && (
+            <PromptInputCommand className="mb-2">
+              <PromptInputCommandInput placeholder="Type a command..." />
+              <PromptInputCommandList>
+                <PromptInputCommandEmpty>
+                  No commands found.
+                </PromptInputCommandEmpty>
+                <PromptInputCommandGroup heading="Agents">
+                  <PromptInputCommandItem
+                    onSelect={() => handleCommandSelect('financial')}
+                  >
+                    <TrendingUpIcon className="mr-2 size-4" />
+                    <span>/financial - Switch to Financial Analyst</span>
+                  </PromptInputCommandItem>
+                  <PromptInputCommandItem
+                    onSelect={() => handleCommandSelect('code')}
+                  >
+                    <CodeIcon className="mr-2 size-4" />
+                    <span>/code - Switch to Code Review Specialist</span>
+                  </PromptInputCommandItem>
+                  <PromptInputCommandItem
+                    onSelect={() => handleCommandSelect('travel')}
+                  >
+                    <PlaneIcon className="mr-2 size-4" />
+                    <span>/travel - Switch to Travel Planning Expert</span>
+                  </PromptInputCommandItem>
+                </PromptInputCommandGroup>
+                <PromptInputCommandGroup heading="Actions">
+                  <PromptInputCommandItem
+                    onSelect={() => handleCommandSelect('clear')}
+                  >
+                    <TrashIcon className="mr-2 size-4" />
+                    <span>/clear - Clear conversation</span>
+                  </PromptInputCommandItem>
+                </PromptInputCommandGroup>
+              </PromptInputCommandList>
+            </PromptInputCommand>
+          )}
           <PromptInputTextarea
-            onChange={(event) => onChange(event.target.value)}
-            placeholder="Ask about the weather, attach images, or try commands with /..."
+            onChange={handleInputChange}
+            placeholder="Analyze financials, review code, plan travel, or try commands with /..."
             value={value}
             disabled={isDisabled}
             aria-label="Message input"

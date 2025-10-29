@@ -14,9 +14,12 @@ import {
 } from '@/components/ai-elements/prompt-input';
 
 export default function ChatPage() {
+  const [draft, setDraft] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedAgent, setSelectedAgent] = useState('financialAnalystAgent');
+
   const { messages, sendMessage, status, setMessages, stop, regenerate } =
     useChat();
-  const [draft, setDraft] = useState('');
 
   const handleSubmit = (message: PromptInputMessage) => {
     const messageText = message.text?.trim();
@@ -25,15 +28,23 @@ export default function ChatPage() {
     }
 
     const files = message.files ?? [];
-    void sendMessage({
-      text: messageText,
-      files: files.map((f) => ({
-        type: 'file' as const,
-        url: f.url,
-        mediaType: f.mediaType,
-        filename: f.filename,
-      })),
-    });
+    void sendMessage(
+      {
+        text: messageText,
+        files: files.map((f) => ({
+          type: 'file' as const,
+          url: f.url,
+          mediaType: f.mediaType,
+          filename: f.filename,
+        })),
+      },
+      {
+        body: {
+          model: selectedModel,
+          agent: selectedAgent,
+        },
+      }
+    );
     setDraft('');
   };
 
@@ -41,13 +52,24 @@ export default function ChatPage() {
     setMessages([]);
   };
 
+  // Get agent description for header
+  const agentDescriptions = {
+    financialAnalystAgent:
+      'Financial expert - Analyze earnings reports, balance sheets, and financial data',
+    codeReviewAgent:
+      'Code quality specialist - Review code for security, performance, and best practices',
+    travelPlanningAgent:
+      'Travel expert - Plan itineraries, suggest destinations, and provide travel tips',
+  };
+
+  const agentDescription =
+    agentDescriptions[selectedAgent as keyof typeof agentDescriptions] ||
+    'Ask me anything!';
+
   return (
     <PromptInputProvider initialInput={draft}>
       <ChatContainer>
-        <ChatHeader
-          description="Ask me about the weather, attach images, or use advanced features"
-          title="AI Chat Assistant (Enhanced)"
-        />
+        <ChatHeader description={agentDescription} title="AI Chat Assistant" />
         <ChatConversation
           messages={messages}
           onRegenerate={regenerate}
@@ -56,8 +78,12 @@ export default function ChatPage() {
         />
         <ChatInput
           onChange={setDraft}
+          onAgentChange={setSelectedAgent}
           onClearMessages={handleClearMessages}
+          onModelChange={setSelectedModel}
           onSubmit={handleSubmit}
+          selectedAgent={selectedAgent}
+          selectedModel={selectedModel}
           status={status}
           value={draft}
         />

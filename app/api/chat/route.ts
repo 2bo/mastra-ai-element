@@ -4,20 +4,75 @@ import { mastra } from '@/src/mastra';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type AgentName =
+  | 'financialAnalystAgent'
+  | 'codeReviewAgent'
+  | 'travelPlanningAgent';
+
+interface ChatRequestBody {
+  messages: ModelMessage[];
+  model?: string;
+  agent?: string;
+}
+
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { messages: ModelMessage[] };
-    const { messages } = body;
+    const body = (await req.json()) as ChatRequestBody;
+    const {
+      messages,
+      model = 'gpt-4o-mini',
+      agent: agentName = 'financialAnalystAgent',
+    } = body;
 
-    const weatherAgent = mastra.getAgent('weatherAgent');
+    // Get the requested agent using type-safe approach
+    const validAgentNames: AgentName[] = [
+      'financialAnalystAgent',
+      'codeReviewAgent',
+      'travelPlanningAgent',
+    ];
+    const selectedAgentName: AgentName = validAgentNames.includes(
+      agentName as AgentName
+    )
+      ? (agentName as AgentName)
+      : 'financialAnalystAgent';
 
-    const stream = await weatherAgent.stream(messages, {
+    if (agentName && !validAgentNames.includes(agentName as AgentName)) {
+      console.warn(
+        `Agent "${agentName}" not found, using financialAnalystAgent`
+      );
+    }
+
+    const agent = mastra.getAgent(selectedAgentName);
+
+    // Map UI model names to Mastra model format
+    const modelMap: Record<string, string> = {
+      'gpt-4o-mini': 'openai/gpt-4o-mini',
+      'gpt-4o': 'openai/gpt-4o',
+      'gpt-3.5-turbo': 'openai/gpt-3.5-turbo',
+    };
+
+    const mastraModel = modelMap[model] ?? 'openai/gpt-4o-mini';
+
+    // Update agent's model dynamically
+    agent.model = mastraModel;
+
+    // Stream with the agent
+    const stream = await agent.stream(messages, {
       format: 'aisdk',
     });
 
     return stream.toUIMessageStreamResponse();
   } catch (error) {
     console.error('Error in chat route:', error);
-    return new Response('Internal server error', { status: 500 });
+    return new Response(
+      JSON.stringify({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 }

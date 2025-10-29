@@ -11,6 +11,10 @@
     "typescriptreact"
   ],
   "eslint.useFlatConfig": true,
+  "eslint.options": {
+    "cache": false
+  },
+  "eslint.codeActionsOnSave.mode": "all",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

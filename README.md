@@ -5,6 +5,7 @@
 Mastra AI フレームワークと Next.js 16 を組み合わせた天気チャットアプリケーションのデモです。Vercel AI SDK によるストリーミング応答、Mastra のエージェント／ワークフロー設計、AI Element コンポーネントによる UI 実装をまとめて確認できます。PoC や社内トレーニングの叩き台としてご利用ください。
 
 ## サンプルで学べること
+
 - GPT-4o-mini を活用した Mastra Weather Agent の構築と、ツール呼び出し・メモリ・スコアリングの連携
 - Open-Meteo API を利用する天気ツールの実装と、Mastra からの利用方法
 - `@ai-sdk/react` と AI Element コンポーネントによるストリーミングチャット UI の構成
@@ -12,6 +13,7 @@ Mastra AI フレームワークと Next.js 16 を組み合わせた天気チャ�
 - LibSQL と Pino logger を組み合わせたメモリ永続化・オブザーバビリティ設定
 
 ## 前提条件と初期設定
+
 - Node.js 20.9.0 以上
 - npm（Node.js 同梱）
 - GPT-4o シリーズへアクセス可能な OpenAI API キー
@@ -31,6 +33,7 @@ npm install
 ## 実行方法
 
 ### 開発時
+
 ```bash
 npm run dev          # Next.js 開発サーバー (http://localhost:3000)
 npm run mastra:dev   # Mastra CLI の開発モード（任意）
@@ -39,6 +42,7 @@ npm run mastra:dev   # Mastra CLI の開発モード（任意）
 チャット UI は Next.js API Route を通じて Mastra Agent と通信します。基本的な動作確認は `npm run dev` のみで可能です。Mastra CLI 経由でエージェントやワークフローを詳しく確認したい場合は、別ターミナルで `npm run mastra:dev` を併用してください。
 
 ### ビルドと本番想定
+
 ```bash
 npm run build        # Next.js 本番ビルド
 npm run start        # Next.js 本番サーバー起動
@@ -48,6 +52,7 @@ npm run mastra:start # Mastra サーバー起動（独立運用が必要な場�
 ```
 
 ## コード品質ツール
+
 ```bash
 npm run typecheck    # TypeScript 型チェック
 npm run lint         # ESLint
@@ -59,6 +64,7 @@ npm run format:check # Prettier チェックのみ
 `.claude/settings.json` の PostToolUse フックにより、TypeScript / JavaScript ファイルの編集時には自動で `lint:fix` と `format` が走るよう設定されています。
 
 ## サンプル構成
+
 ```
 app/               Next.js App Router 層（UI + API）
 components/        チャット UI / AI Element ラッパー / Radix ベースの UI コンポーネント
@@ -83,6 +89,7 @@ lib/               共通ユーティリティ
   - `scorers/weather-scorer.ts`: ツール適切性、回答完全性、翻訳品質を評価するスコアラー
 
 ## チャット UI の見どころ
+
 - 添付ファイル、ホバーチップ、モデル選択、コピーアクション付きのリッチな入力体験
 - 画像プレビューや一般ファイルの簡易表示
 - Streamdown によるストリーミングマークダウンレンダリング
@@ -90,16 +97,19 @@ lib/               共通ユーティリティ
 - 送信中インジケーター、エラー通知、空状態などアクセシビリティに配慮した状態管理
 
 ## オブザーバビリティとストレージ
+
 - メモリ: LibSQL（`file:../mastra.db`。`.mastra/output` からの相対パス）で会話履歴を永続化
 - オブザーバビリティ: `:memory:` LibSQL ストアでスコアとトレーシングを管理し、デフォルトエクスポーターを有効化
 - ログ: `@mastra/loggers` + Pino による構造化ログ出力
 
 ## 学習リソース
+
 - `ARCHITECTURE.md`: 全体アーキテクチャと詳細解説
 - `AGENTS.md`: エージェントプロンプト、ツール、評価戦略
 - `CLAUDE.md`: 自動整形ワークフローの設定
 
 ## カスタマイズ & デプロイのヒント
+
 - 本番環境で Open-Meteo API へのアウトバウンド通信が許可されていることを確認
 - OpenAI API キーは環境変数で安全に管理
 - Mastra を独立サーバーとして運用する場合は `npm run mastra:build` → `npm run mastra:start`
@@ -107,4 +117,5 @@ lib/               共通ユーティリティ
 - フロントエンドは AI Element コンポーネントをベースにしているため、UI 変更時は `components/` 以下を参考にしてください
 
 ## ライセンス
+
 MIT License（付属の `LICENSE` ファイルを参照してください）

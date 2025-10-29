@@ -63,7 +63,7 @@ export function ChatConversation({
               <Button
                 className="ml-4"
                 onClick={() => {
-                  void onStop?.();
+                  void onStop();
                 }}
                 size="sm"
                 type="button"
@@ -92,7 +92,7 @@ export function ChatConversation({
           <div className="flex justify-center py-4">
             <Button
               onClick={() => {
-                void onRegenerate?.();
+                void onRegenerate();
               }}
               size="sm"
               type="button"
