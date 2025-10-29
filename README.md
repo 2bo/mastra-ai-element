@@ -1,16 +1,37 @@
-# このリポジトリは Mastra と AI Element を組み合わせたサンプルプロジェクトです。
+# Mastra AI Elements - Multi-Agent Chat Application
 
-## Mastra AI Weather Chat サンプル概要
+Mastra AI フレームワークと Next.js 15 を組み合わせた、複数の特化型 AI エージェントを活用するチャットアプリケーションです。Vercel AI SDK によるストリーミング応答、Mastra のエージェント設計、AI Elements コンポーネントによる UI 実装を確認できます。
 
-Mastra AI フレームワークと Next.js 16 を組み合わせた天気チャットアプリケーションのデモです。Vercel AI SDK によるストリーミング応答、Mastra のエージェント／ワークフロー設計、AI Element コンポーネントによる UI 実装をまとめて確認できます。PoC や社内トレーニングの叩き台としてご利用ください。
+## 特徴
 
-## サンプルで学べること
+### 3つの特化型エージェント
 
-- GPT-4o-mini を活用した Mastra Weather Agent の構築と、ツール呼び出し・メモリ・スコアリングの連携
-- Open-Meteo API を利用する天気ツールの実装と、Mastra からの利用方法
-- `@ai-sdk/react` と AI Element コンポーネントによるストリーミングチャット UI の構成
-- Mastra Workflow を使った「天気取得 → アクティビティ提案」2 ステップ自動化
-- LibSQL と Pino logger を組み合わせたメモリ永続化・オブザーバビリティ設定
+1. **Financial Analyst Agent** (財務分析エージェント)
+   - 決算報告書（短信決算資料）の分析
+   - 財務指標の抽出と評価
+   - トレンド分析とリスク評価
+   - GPT-4o の Vision 機能で PDF/画像からの情報抽出
+
+2. **Code Review Agent** (コードレビューエージェント)
+   - コード品質、セキュリティ、パフォーマンスの分析
+   - ベストプラクティスの提案
+   - リファクタリング推奨事項
+   - 技術的負債の識別
+
+3. **Travel Planning Agent** (旅行計画エージェント)
+   - カスタム旅行ツールとの連携
+   - 目的地の情報提供とアクティビティ提案
+   - 予算見積もりと旅行計画
+   - 東京、パリ、ニューヨークの詳細データ
+
+### リッチな UI 機能
+
+- **動的モデル選択**: GPT-4o-mini、GPT-4o、GPT-3.5-turbo の切り替え
+- **エージェント切り替え**: ドロップダウンで簡単にエージェント選択
+- **コマンドパレット**: `/` キーで素早くエージェントやコマンドにアクセス
+- **ストリーミング応答**: リアルタイムでの AI 応答表示
+- **ファイル添付**: 画像やドキュメントのアップロード対応
+- **マークダウンレンダリング**: Streamdown によるリッチなテキスト表示
 
 ## 前提条件と初期設定
 
@@ -39,7 +60,7 @@ npm run dev          # Next.js 開発サーバー (http://localhost:3000)
 npm run mastra:dev   # Mastra CLI の開発モード（任意）
 ```
 
-チャット UI は Next.js API Route を通じて Mastra Agent と通信します。基本的な動作確認は `npm run dev` のみで可能です。Mastra CLI 経由でエージェントやワークフローを詳しく確認したい場合は、別ターミナルで `npm run mastra:dev` を併用してください。
+チャット UI は Next.js API Route を通じて Mastra Agent と通信します。基本的な動作確認は `npm run dev` のみで可能です。
 
 ### ビルドと本番想定
 
@@ -61,60 +82,103 @@ npm run format       # Prettier フォーマット
 npm run format:check # Prettier チェックのみ
 ```
 
-`.claude/settings.json` の PostToolUse フックにより、TypeScript / JavaScript ファイルの編集時には自動で `lint:fix` と `format` が走るよう設定されています。
+`.claude/settings.json` の PostToolUse フックにより、TypeScript / JavaScript ファイルの編集時には自動で `lint:fix`、`format`、`typecheck` が走るよう設定されています。
 
-## サンプル構成
+## プロジェクト構成
 
 ```
-app/               Next.js App Router 層（UI + API）
-components/        チャット UI / AI Element ラッパー / Radix ベースの UI コンポーネント
-src/mastra/        Mastra 設定（エージェント・ツール・ワークフロー・スコアラー）
-lib/               共通ユーティリティ
+app/                    Next.js App Router 層（UI + API）
+  ├── page.tsx          メインチャット画面
+  └── api/chat/         チャット API エンドポイント
+components/             チャット UI / AI Elements ラッパー
+  ├── chat/             チャット関連コンポーネント
+  ├── ai-elements/      AI Elements ヘルパー
+  └── ui/               Radix UI ベースの基礎コンポーネント
+src/mastra/             Mastra 設定
+  ├── agents/           エージェント定義
+  │   ├── financial-analyst-agent.ts
+  │   ├── code-review-agent.ts
+  │   └── travel-planning-agent.ts
+  ├── tools/            カスタムツール
+  │   └── travel-tool.ts
+  ├── workflows/        ワークフロー定義
+  ├── scorers/          スコアラー定義
+  └── index.ts          Mastra インスタンス設定
 ```
+
+### 主要コンポーネント
 
 - **UI レイヤー (`app/` + `components/`)**
-  - `app/page.tsx`: `useChat` を利用したチャット画面
-  - `components/chat`: レイアウト、メッセージ一覧、入力欄、メッセージ描画
-  - `components/ai-elements`: Streamdown レンダリング、スクロール制御、Prompt 入力などのヘルパー
-  - `components/ui`: Radix UI を Tailwind で拡張した基礎コンポーネント
+  - `app/page.tsx`: `useChat` と AI Elements を利用したチャット画面
+  - `components/chat/chat-input.tsx`: エージェント選択、モデル選択、コマンドパレット
+  - `components/chat/chat-conversation.tsx`: メッセージ一覧とストリーミング表示
+  - `components/ai-elements`: Streamdown レンダリング、スクロール制御などのヘルパー
 
 - **API レイヤー (`app/api/chat/route.ts`)**
-  - Mastra の `weatherAgent` を取得し、`toUIMessageStreamResponse()` で AI SDK 互換のストリームを返却
+  - 動的なエージェント選択とモデル切り替え
+  - `toUIMessageStreamResponse()` で AI SDK 互換のストリーム返却
+  - 型安全なエージェント取得とエラーハンドリング
 
 - **Mastra レイヤー (`src/mastra/`)**
-  - `index.ts`: エージェント、ワークフロー、スコアラー、LibSQL ストレージ、オブザーバビリティを束ねた Mastra インスタンス
-  - `agents/weather-agent.ts`: GPT-4o-mini、ツール連携、LibSQL メモリ（`file:../mastra.db`）を備えた Weather Agent
-  - `tools/weather-tool.ts`: Open-Meteo Geocoding + Forecast API を呼び出し、標準化したレスポンスを返すツール
-  - `workflows/weather-workflow.ts`: `fetch-weather` → `plan-activities` の 2 ステップでアクティビティ提案を生成
-  - `scorers/weather-scorer.ts`: ツール適切性、回答完全性、翻訳品質を評価するスコアラー
+  - `index.ts`: シングルトンパターンによる Mastra インスタンス管理（HMR 対応）
+  - `agents/`: 各エージェントの詳細な指示文とメモリ設定
+  - `tools/travel-tool.ts`: Zod スキーマによる型安全なカスタムツール
+  - LibSQL によるメモリ永続化とオブザーバビリティ
 
-## チャット UI の見どころ
+## 技術的なハイライト
 
-- 添付ファイル、ホバーチップ、モデル選択、コピーアクション付きのリッチな入力体験
-- 画像プレビューや一般ファイルの簡易表示
-- Streamdown によるストリーミングマークダウンレンダリング
-- 「最下部へ移動」ボタンやアシスタントメッセージのコピー操作
-- 送信中インジケーター、エラー通知、空状態などアクセシビリティに配慮した状態管理
+### TypeScript 型安全性
 
-## オブザーバビリティとストレージ
+- `ReturnType<typeof createMastra>` による完全な型推論
+- エージェント名の Union 型による型安全なルーティング
+- Zod スキーマによるツールの入出力検証
 
-- メモリ: LibSQL（`file:../mastra.db`。`.mastra/output` からの相対パス）で会話履歴を永続化
-- オブザーバビリティ: `:memory:` LibSQL ストアでスコアとトレーシングを管理し、デフォルトエクスポーターを有効化
-- ログ: `@mastra/loggers` + Pino による構造化ログ出力
+### 開発体験の最適化
+
+- VS Code での自動フォーマット・Lint 設定
+- Claude Code 用の包括的な Unix コマンド権限設定
+- ESLint キャッシュ無効化による型チェックの正確性確保
+- HMR 対応のシングルトンパターン
+
+### パフォーマンスと信頼性
+
+- ストリーミングレスポンスによる高速な応答体験
+- LibSQL によるメモリの永続化
+- Pino による構造化ログ出力
+- エラーバウンダリーとユーザーフレンドリーなエラーメッセージ
+
+## カスタマイズ方法
+
+### 新しいエージェントの追加
+
+1. `src/mastra/agents/` に新しいエージェントファイルを作成
+2. `src/mastra/index.ts` の agents オブジェクトに追加
+3. `app/api/chat/route.ts` の `AgentName` 型と配列に追加
+4. `app/page.tsx` と `components/chat/chat-input.tsx` に UI を追加
+
+### カスタムツールの作成
+
+1. `src/mastra/tools/` に新しいツールファイルを作成
+2. `createTool()` で Zod スキーマと実行ロジックを定義
+3. エージェント定義で `tools` プロパティに追加
+
+### モデルの変更
+
+`app/api/chat/route.ts` の `modelMap` オブジェクトに新しいモデルを追加し、UI の選択肢を更新します。
 
 ## 学習リソース
 
 - `ARCHITECTURE.md`: 全体アーキテクチャと詳細解説
-- `AGENTS.md`: エージェントプロンプト、ツール、評価戦略
-- `CLAUDE.md`: 自動整形ワークフローの設定
+- `.claude/settings.json`: 自動整形ワークフローと権限設定
+- [Mastra Documentation](https://docs.mastra.ai)
+- [Vercel AI SDK](https://sdk.vercel.ai)
 
-## カスタマイズ & デプロイのヒント
+## デプロイのヒント
 
-- 本番環境で Open-Meteo API へのアウトバウンド通信が許可されていることを確認
 - OpenAI API キーは環境変数で安全に管理
 - Mastra を独立サーバーとして運用する場合は `npm run mastra:build` → `npm run mastra:start`
-- Weather Agent のモデル／プロンプト／ツールを変更して独自のエージェントに拡張可能
-- フロントエンドは AI Element コンポーネントをベースにしているため、UI 変更時は `components/` 以下を参考にしてください
+- 各エージェントのモデル、プロンプト、ツールは自由にカスタマイズ可能
+- フロントエンドは AI Elements コンポーネントをベースにしているため、UI 変更時は `components/` 以下を参考に
 
 ## ライセンス
 
