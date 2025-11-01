@@ -26,11 +26,11 @@ interface ChatMessageItemProps {
 const AVATARS = {
   assistant: {
     name: 'Assistant',
-    icon: <Bot className="size-5" />,
+    icon: <Bot className="size-6" />,
   },
   user: {
     name: 'You',
-    icon: <User className="size-5" />,
+    icon: <User className="size-6" />,
   },
 } as const;
 
@@ -114,6 +114,7 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
 
   return (
     <Message from={role}>
+      <MessageAvatar icon={avatar.icon} name={avatar.name} />
       <MessageContent variant="flat">
         {fileParts.map((part, index) => (
           <AttachmentPreview key={`${message.id}-file-${index}`} part={part} />
@@ -121,7 +122,6 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
         <Response>{textContent}</Response>
         {role === 'assistant' && <MessageActions text={textContent} />}
       </MessageContent>
-      <MessageAvatar icon={avatar.icon} name={avatar.name} />
     </Message>
   );
 }

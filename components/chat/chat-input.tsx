@@ -36,7 +36,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import {
-  ImageIcon,
   SettingsIcon,
   SparklesIcon,
   TrashIcon,
@@ -44,6 +43,9 @@ import {
   TrendingUpIcon,
   CodeIcon,
   PlaneIcon,
+  PaperclipIcon,
+  FileIcon,
+  XIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -81,6 +83,7 @@ export function ChatInput({
   const setSelectedModel = onModelChange ?? setInternalSelectedModel;
   const selectedAgent = externalSelectedAgent ?? internalSelectedAgent;
   const setSelectedAgent = onAgentChange ?? setInternalSelectedAgent;
+  const attachments = usePromptInputAttachments();
 
   // Handle command palette visibility
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -115,7 +118,12 @@ export function ChatInput({
 
   return (
     <div className="border-t border-gray-200 p-4">
-      <PromptInput onSubmit={onSubmit} accept="image/*" multiple maxFiles={5}>
+      <PromptInput
+        onSubmit={onSubmit}
+        accept="image/*,application/pdf"
+        multiple
+        maxFiles={5}
+      >
         <PromptInputHeader className="flex items-center justify-between px-3 py-2 border-b">
           <div className="flex items-center gap-2">
             <SparklesIcon className="size-4 text-primary" />
@@ -258,7 +266,9 @@ export function ChatInput({
             </PromptInputSpeechButton>
           </PromptInputTools>
           <PromptInputSubmit
-            disabled={isDisabled || !value.trim()}
+            disabled={
+              isDisabled || (!value.trim() && attachments.files.length === 0)
+            }
             status={status}
             aria-label="Send message"
           />
@@ -277,7 +287,7 @@ function AttachmentsButton({ disabled }: { disabled: boolean }) {
       disabled={disabled}
       onClick={() => attachments.openFileDialog()}
     >
-      <ImageIcon className="size-4" />
+      <PaperclipIcon className="size-4" />
     </PromptInputButton>
   );
 }
@@ -290,27 +300,36 @@ function AttachmentsDisplay() {
   }
 
   return (
-    <PromptInputAttachments className="flex flex-wrap gap-2 p-2 border-b">
+    <PromptInputAttachments className="flex flex-wrap gap-3 px-4 py-6 border-b bg-muted/30">
       {(attachment) => (
-        <div key={attachment.id} className="relative">
+        <div
+          key={attachment.id}
+          className="group relative rounded-lg border bg-background shadow-sm transition-all hover:shadow-md"
+        >
           {attachment.mediaType.startsWith('image/') && attachment.url ? (
             <img
               alt={attachment.filename ?? 'attachment'}
-              className="size-20 rounded-md border object-cover"
+              className="h-24 w-24 object-cover rounded-lg"
               src={attachment.url}
             />
           ) : (
-            <div className="flex size-20 items-center justify-center rounded-md border bg-muted">
-              <ImageIcon className="size-6 text-muted-foreground" />
+            <div className="flex h-28 w-32 flex-col items-center justify-center gap-1.5 bg-muted/50 p-2 rounded-lg">
+              <FileIcon className="size-8 text-muted-foreground shrink-0" />
+              {attachment.filename && (
+                <span className="text-xs text-muted-foreground text-center w-full line-clamp-2 break-words px-1 leading-tight">
+                  {attachment.filename}
+                </span>
+              )}
             </div>
           )}
           <button
             aria-label="Remove attachment"
-            className="absolute -right-1 -top-1 rounded-full bg-destructive p-1 text-destructive-foreground shadow-sm"
+            className="absolute right-1 top-1 rounded-full bg-background/90 p-1.5 text-foreground shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-background hover:scale-110"
             onClick={() => attachments.remove(attachment.id)}
             type="button"
           >
-            <span className="sr-only">Remove</span>×
+            <XIcon className="size-3" />
+            <span className="sr-only">Remove</span>
           </button>
         </div>
       )}

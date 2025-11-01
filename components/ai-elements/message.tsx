@@ -11,8 +11,8 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      'group flex w-full items-end justify-end gap-2 py-4',
-      from === 'user' ? 'is-user' : 'is-assistant flex-row-reverse justify-end',
+      'group flex w-full items-start gap-3 py-4',
+      from === 'user' ? 'is-user justify-end flex-row-reverse' : 'is-assistant',
       className
     )}
     {...props}
@@ -30,7 +30,7 @@ const messageContentVariants = cva(
           'group-[.is-assistant]:bg-secondary group-[.is-assistant]:text-foreground',
         ],
         flat: [
-          'group-[.is-user]:max-w-[80%] group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground',
+          'group-[.is-user]:max-w-[80%] group-[.is-user]:ml-auto group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground',
           'group-[.is-assistant]:text-foreground',
         ],
       },
@@ -84,7 +84,7 @@ export const MessageAvatar = ({
     return (
       <div
         className={cn(
-          'flex size-8 items-center justify-center rounded-full bg-muted ring-1 ring-border',
+          'flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-2 ring-primary/20',
           className
         )}
       >
@@ -94,7 +94,10 @@ export const MessageAvatar = ({
   }
 
   return (
-    <Avatar className={cn('size-8 ring-1 ring-border', className)} {...props}>
+    <Avatar
+      className={cn('size-10 shrink-0 ring-2 ring-border', className)}
+      {...props}
+    >
       {src && <AvatarImage alt="" className="mt-0 mb-0" src={src} />}
       <AvatarFallback>{safeInitials ?? 'ME'}</AvatarFallback>
     </Avatar>

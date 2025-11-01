@@ -23,14 +23,16 @@ export default function ChatPage() {
 
   const handleSubmit = (message: PromptInputMessage) => {
     const messageText = message.text?.trim();
-    if (!messageText) {
+    const files = message.files ?? [];
+
+    // Allow submission if there's either text or files
+    if (!messageText && files.length === 0) {
       return;
     }
 
-    const files = message.files ?? [];
     void sendMessage(
       {
-        text: messageText,
+        text: messageText ?? '',
         files: files.map((f) => ({
           type: 'file' as const,
           url: f.url,

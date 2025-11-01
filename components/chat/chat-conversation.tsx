@@ -1,6 +1,6 @@
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
-import { AlertCircleIcon, MessageSquareIcon } from 'lucide-react';
+import { AlertCircleIcon, Bot, MessageSquareIcon } from 'lucide-react';
 import {
   Conversation,
   ConversationContent,
@@ -8,6 +8,11 @@ import {
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import { Loader } from '@/components/ai-elements/loader';
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+} from '@/components/ai-elements/message';
 import { ChatMessageItem } from './chat-message-item';
 import { Button } from '@/components/ui/button';
 
@@ -31,6 +36,29 @@ export function ChatConversation({
   const isError = status === 'error';
   const canRegenerate = typeof onRegenerate === 'function' && hasMessages;
 
+  // Filter out empty assistant messages during loading
+  const displayMessages = isLoading
+    ? messages.filter((msg) => {
+        if (msg.role === 'assistant') {
+          // Keep only messages with actual content
+          return msg.parts.some((part) => {
+            if ('text' in part) return part.text.trim().length > 0;
+            return true;
+          });
+        }
+        return true;
+      })
+    : messages;
+
+  // Check if there's a streaming assistant message with content
+  const hasStreamingContent =
+    isLoading &&
+    messages.some(
+      (msg) =>
+        msg.role === 'assistant' &&
+        msg.parts.some((part) => 'text' in part && part.text.trim().length > 0)
+    );
+
   return (
     <Conversation
       className="flex-1"
@@ -40,7 +68,7 @@ export function ChatConversation({
     >
       <ConversationContent>
         {hasMessages ? (
-          messages.map((message) => (
+          displayMessages.map((message) => (
             <ChatMessageItem key={message.id} message={message} />
           ))
         ) : (
@@ -51,28 +79,36 @@ export function ChatConversation({
           />
         )}
 
-        {isLoading && (
-          <div
-            className="flex items-center justify-center py-4"
-            role="status"
-            aria-label="Loading"
-          >
-            <Loader />
-            <span className="sr-only">Processing your message...</span>
-            {onStop && (
-              <Button
-                className="ml-4"
-                onClick={() => {
-                  void onStop();
-                }}
-                size="sm"
-                type="button"
-                variant="outline"
+        {isLoading && !hasStreamingContent && (
+          <Message from="assistant">
+            <MessageAvatar icon={<Bot className="size-6" />} name="Assistant" />
+            <MessageContent variant="flat">
+              <div
+                className="flex items-center gap-2"
+                role="status"
+                aria-label="Loading"
               >
-                Stop
-              </Button>
-            )}
-          </div>
+                <Loader />
+                <span className="text-sm text-muted-foreground">
+                  Thinking...
+                </span>
+                <span className="sr-only">Processing your message...</span>
+              </div>
+              {onStop && (
+                <Button
+                  className="mt-2"
+                  onClick={() => {
+                    void onStop();
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Stop
+                </Button>
+              )}
+            </MessageContent>
+          </Message>
         )}
 
         {isError && (
