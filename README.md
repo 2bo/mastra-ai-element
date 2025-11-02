@@ -43,6 +43,11 @@ Mastra AI フレームワークと Next.js 15 を組み合わせた、複数の�
 
 ```ini
 OPENAI_API_KEY=your-api-key
+
+# Optional: Langfuse (LLM Observability & Prompt Management)
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=http://localhost:3001
 ```
 
 依存関係をインストールします。
@@ -50,6 +55,28 @@ OPENAI_API_KEY=your-api-key
 ```bash
 npm install
 ```
+
+### Langfuse ローカル環境のセットアップ（オプション）
+
+LLM の観測（トレーシング）とプロンプト管理を行いたい場合、ローカルで Langfuse を実行できます。
+
+```bash
+cd langfuse
+docker compose up -d       # Langfuse + PostgreSQL + Redis + ClickHouse + Garage を起動
+./init-garage.sh          # Garage S3 ストレージを初期化（初回のみ）
+```
+
+Langfuse UI にアクセス: http://localhost:3001
+
+**ログイン情報:**
+
+- Email: `admin@example.com`
+- Password: `langfuse/.env` の `LANGFUSE_INIT_USER_PASSWORD` を確認
+
+**API キー:**
+Settings → API Keys で表示される Public/Secret Key をプロジェクトルートの `.env` に追加してください。
+
+詳細は [`langfuse/README.md`](./langfuse/README.md) を参照。
 
 ## 実行方法
 
@@ -98,7 +125,10 @@ src/mastra/             Mastra 設定
   ├── agents/           エージェント定義
   │   ├── financial-analyst-agent.ts
   │   ├── code-review-agent.ts
-  │   └── travel-planning-agent.ts
+  │   ├── travel-planning-agent.ts
+  │   └── langfuse-managed-agent.ts   # Langfuse連携サンプル
+  ├── prompts/          Langfuse連携などのプロンプト取得ロジック
+  │   └── langfuse-prompt-loader.ts
   ├── tools/            カスタムツール
   │   └── travel-tool.ts
   ├── workflows/        ワークフロー定義
@@ -121,7 +151,8 @@ src/mastra/             Mastra 設定
 
 - **Mastra レイヤー (`src/mastra/`)**
   - `index.ts`: シングルトンパターンによる Mastra インスタンス管理（HMR 対応）
-  - `agents/`: 各エージェントの詳細な指示文とメモリ設定
+  - `agents/`: 各エージェントの詳細な指示文とメモリ設定（`langfuse-managed-agent.ts` で Langfuse 連携サンプルを提供）
+  - `prompts/langfuse-prompt-loader.ts`: Langfuse からプロンプトを取得して Mastra に差し込むヘルパー
   - `tools/travel-tool.ts`: Zod スキーマによる型安全なカスタムツール
   - LibSQL によるメモリ永続化とオブザーバビリティ
 

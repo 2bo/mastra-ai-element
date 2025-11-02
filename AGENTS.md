@@ -1,14 +1,15 @@
 # Agent Specifications
 
-このドキュメントは、アプリケーションに実装されている3つの特化型AIエージェントの詳細仕様を提供します。
+このドキュメントは、アプリケーションに実装されている4つの特化型AIエージェントの詳細仕様を提供します。
 
 ## 概要
 
-本アプリケーションは、それぞれ異なる専門能力を持つ3つのエージェントを備えています：
+本アプリケーションは、それぞれ異なる専門能力を持つ4つのエージェントを備えています：
 
 1. **Financial Analyst Agent** - 財務書類と決算報告書の分析
 2. **Code Review Agent** - コード品質、セキュリティ、ベストプラクティスのレビュー
 3. **Travel Planning Agent** - カスタムツールと連携した旅行計画
+4. **Langfuse Managed Agent** - Langfuseで管理したプロンプトをMastraに適用するサンプル
 
 各エージェントは、その分野で優れた能力を発揮するための専門的な指示、モデル設定、ツールアクセスを備えています。
 
@@ -215,6 +216,42 @@ Tools: travelTool (カスタム目的地情報ツール)
 
 ---
 
+## 4. Langfuse Managed Agent (Langfuse連携サンプル)
+
+### 目的
+
+Langfuseでバージョン管理されたシステムプロンプトを実行時に取得し、Mastraエージェントへ適用する運用パターンを示すサンプルです。Langfuseのラベル運用や変数適用、フォールバック処理を合わせて確認できます。
+
+### 設定
+
+```typescript
+Agent ID: langfuseManagedAgent
+Model: Langfuse側のconfigにmodelIdがあればそれを適用（無い場合は openai/gpt-4o-mini）
+Memory: LibSQL (ファイルベース永続化: ../mastra.db)
+Tools: なし
+```
+
+### 機能
+
+- **Langfuseプロンプト取得**: `@langfuse/client` を使い、プロンプト名＋ラベル（またはバージョン）から instructions を動的に取得
+- **変数バインド**: Langfuseで定義した Mustache 変数に環境変数から値を注入（例: tone, channel）
+- **フォールバック**: Langfuseに接続できない場合はローカルのフォールバック文面を使用
+- **メタデータ付与**: 使用したプロンプト名／バージョン／ラベル／ソースを Mastra の metadata に記録し、トレーシングやロギングで参照可能
+
+### 補足
+
+- `.env` に `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` を設定すると、本番プロンプトを自動で取得できます
+- Langfuseが利用できない環境ではフォールバックが発動し、サービス継続性を確保できます
+- トレーシングを Langfuse Exporter に送る場合は `src/mastra/observability/langfuse.ts` を参照し、`langfuseManagedAgent` に `tracing` を付与してください
+
+### ユースケース例
+
+- Langfuseでバージョン管理しているシステムプロンプトをMastraに反映する
+- ラベル運用（production / stagingなど）で環境ごとのプロンプトを切り替える
+- Langfuseプロンプトに定義した変数（例: tone, productName）を環境変数やコンフィグから注入する
+
+---
+
 ## エージェントアーキテクチャパターン
 
 ### メモリ管理
@@ -237,11 +274,12 @@ memory: new Memory({
 
 ### モデル選択の理由
 
-| エージェント      | モデル      | 理由                                                                             |
-| ----------------- | ----------- | -------------------------------------------------------------------------------- |
-| Financial Analyst | GPT-4o      | PDF/画像分析のビジョン機能、複雑な財務推論                                       |
-| Code Review       | GPT-4o      | 大規模なコンテキストウィンドウ、深いコード理解、パターン認識                     |
-| Travel Planning   | GPT-4o-mini | 高速レスポンス、会話型タスクに対するコスト効率、ツールベースのルックアップに十分 |
+| エージェント      | モデル                                     | 理由                                                                             |
+| ----------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
+| Financial Analyst | GPT-4o                                     | PDF/画像分析のビジョン機能、複雑な財務推論                                       |
+| Code Review       | GPT-4o                                     | 大規模なコンテキストウィンドウ、深いコード理解、パターン認識                     |
+| Travel Planning   | GPT-4o-mini                                | 高速レスポンス、会話型タスクに対するコスト効率、ツールベースのルックアップに十分 |
+| Langfuse Managed  | Langfuse側のmodelId（なければGPT-4o-mini） | プロンプトとモデルをLangfuseで一元管理し、環境に応じた差し替えを可能にする       |
 
 ### 動的モデルオーバーライド
 
@@ -399,6 +437,111 @@ export const yourAgent = new Agent({
 
 ---
 
+## オブザーバビリティとトレーシング
+
+### Langfuse統合
+
+本アプリケーションは、Langfuseを使用したLLMオブザーバビリティとプロンプト管理をサポートしています。Langfuseにより、エージェントの動作を詳細に観測し、パフォーマンスを最適化できます。
+
+#### Langfuseとは
+
+Langfuseは、LLMアプリケーション向けのオープンソースオブザーバビリティプラットフォームです：
+
+- **トレーシング**: エージェントの実行フロー、ツール呼び出し、メモリアクセスの可視化
+- **プロンプト管理**: バージョン管理されたプロンプトの一元管理
+- **メトリクス**: レイテンシ、トークン使用量、コストの追跡
+- **デバッグ**: エラーとパフォーマンスボトルネックの識別
+
+#### ローカルセットアップ
+
+Langfuseはローカル環境でDockerを使用して実行できます：
+
+```bash
+cd langfuse
+docker compose up -d       # サービス起動
+./init-garage.sh          # S3ストレージ初期化（初回のみ）
+```
+
+詳細なセットアップ手順は [`langfuse/README.md`](./langfuse/README.md) を参照してください。
+
+#### 環境変数設定
+
+プロジェクトルートの `.env` に以下を追加：
+
+```ini
+# Langfuse Configuration (Optional)
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=http://localhost:3001
+```
+
+Langfuse UIにログイン後、Settings → API Keysからキーを取得できます。
+
+#### トレース対象
+
+Mastraは以下の情報を自動的にLangfuseに送信します：
+
+- **エージェント実行**: 各エージェント呼び出しの開始から終了まで
+- **モデル呼び出し**: 使用モデル、トークン数、レイテンシ
+- **ツール実行**: ツール名、入力パラメータ、出力結果
+- **メモリ操作**: 会話履歴の保存と取得
+- **エラーとリトライ**: 失敗したリクエストと再試行
+
+#### プロンプト管理
+
+Langfuseのプロンプト管理機能により、以下が可能になります：
+
+- **バージョン管理**: プロンプトの変更履歴を追跡
+- **A/Bテスト**: 異なるプロンプトバージョンの効果測定
+- **チーム共有**: プロンプトの一元管理と共有
+- **動的ロード**: アプリケーション再デプロイ不要でプロンプト更新
+
+#### Mastra設定
+
+Langfuseエクスポーターは `src/mastra/index.ts` で設定されています：
+
+```typescript
+import { LangfuseExporter } from '@mastra/langfuse';
+
+const mastra = new Mastra({
+  agents: {
+    /* ... */
+  },
+  telemetry: {
+    exporter: new LangfuseExporter({
+      secretKey: process.env.LANGFUSE_SECRET_KEY!,
+      publicKey: process.env.LANGFUSE_PUBLIC_KEY!,
+      baseUrl: process.env.LANGFUSE_BASE_URL || 'http://localhost:3001',
+      debug: process.env.NODE_ENV === 'development',
+    }),
+  },
+});
+```
+
+#### メトリクスの確認
+
+Langfuse UIで以下を確認できます：
+
+1. **Traces**: 各会話の詳細なフローとタイミング
+2. **Sessions**: ユーザーセッションごとのインタラクション
+3. **Metrics**: トークン使用量、コスト、レスポンス時間の集計
+4. **Analytics**: エージェント別、モデル別の統計情報
+
+#### パフォーマンス最適化
+
+トレースデータを分析することで、以下の最適化が可能：
+
+- **ボトルネックの特定**: 遅いツール実行やモデル呼び出しの識別
+- **コスト削減**: 高コストなモデル使用パターンの発見
+- **プロンプト改善**: トークン使用量を削減するプロンプト調整
+- **キャッシング戦略**: 頻繁なリクエストのキャッシング機会の発見
+
+#### オプション機能
+
+Langfuse環境変数が設定されていない場合、アプリケーションは通常通り動作します（トレーシングなし）。開発環境でのみ有効化することも可能です。
+
+---
+
 ## トラブルシューティング
 
 ### エージェントが応答しない
@@ -428,6 +571,10 @@ export const yourAgent = new Agent({
 2. VS CodeでTypeScript Serverを再起動
 3. ESLintキャッシュをクリア: `rm -rf .eslintcache node_modules/.cache`
 4. `npm run typecheck` を実行して型を確認
+
+## 言語
+
+このリポジトリでは常に日本語で回答
 
 ---
 
