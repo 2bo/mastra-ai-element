@@ -1,5 +1,6 @@
 import type { ModelMessage } from 'ai';
 import { mastra } from '@/src/mastra';
+import { langfuseAgentMetadata } from '@/src/mastra/agents/langfuse-managed-agent';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,8 @@ export const dynamic = 'force-dynamic';
 type AgentName =
   | 'financialAnalystAgent'
   | 'codeReviewAgent'
-  | 'travelPlanningAgent';
+  | 'travelPlanningAgent'
+  | 'langfuseManagedAgent';
 
 interface ChatRequestBody {
   messages: ModelMessage[];
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
       'financialAnalystAgent',
       'codeReviewAgent',
       'travelPlanningAgent',
+      'langfuseManagedAgent',
     ];
     const selectedAgentName: AgentName = validAgentNames.includes(
       agentName as AgentName
@@ -56,9 +59,31 @@ export async function POST(req: Request) {
     // Update agent's model dynamically
     agent.model = mastraModel;
 
+    // Prepare tracing options with Langfuse prompt metadata (for langfuseManagedAgent)
+    const tracingOptions =
+      selectedAgentName === 'langfuseManagedAgent'
+        ? {
+            metadata: {
+              promptName: langfuseAgentMetadata.promptName,
+              promptVersion: langfuseAgentMetadata.promptVersion,
+              promptLabel: langfuseAgentMetadata.promptLabel,
+              promptSource: langfuseAgentMetadata.source,
+              promptVariables: langfuseAgentMetadata.variables,
+              langfusePrompt: langfuseAgentMetadata.json,
+            },
+          }
+        : undefined;
+
     // Stream with the agent
     const stream = await agent.stream(messages, {
       format: 'aisdk',
+      tracingOptions,
+      telemetry: {
+        isEnabled: true,
+        metadata: {
+          langfusePrompt: langfuseAgentMetadata.json ?? '{}',
+        },
+      },
     });
 
     return stream.toUIMessageStreamResponse();

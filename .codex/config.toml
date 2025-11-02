@@ -1,0 +1,25 @@
+model = "gpt-5-codex"
+model_reasoning_effort = "medium"
+
+[mcp_servers.mastra]
+command = "npx"
+args = ["-y", "@mastra/mcp-docs-server"]
+
+[mcp_servers.deepwiki]
+url = "https://mcp.deepwiki.com/mcp"
+tool_timeout_sec = 180
+startup_timeout_sec = 30
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 180
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest"]
+startup_timeout_sec = 20
+tool_timeout_sec = 300
+
+[tools]
+web_search = true

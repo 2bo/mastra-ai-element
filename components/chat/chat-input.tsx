@@ -108,6 +108,10 @@ export function ChatInput({
         setSelectedAgent('travelPlanningAgent');
         onChange('');
         break;
+      case 'langfuse':
+        setSelectedAgent('langfuseManagedAgent');
+        onChange('');
+        break;
       case 'clear':
         onClearMessages?.();
         onChange('');
@@ -167,6 +171,9 @@ export function ChatInput({
                 </PromptInputModelSelectItem>
                 <PromptInputModelSelectItem value="travelPlanningAgent">
                   Travel Planning Expert
+                </PromptInputModelSelectItem>
+                <PromptInputModelSelectItem value="langfuseManagedAgent">
+                  Langfuse Prompt Sample
                 </PromptInputModelSelectItem>
               </PromptInputModelSelectContent>
             </PromptInputModelSelect>
@@ -235,6 +242,12 @@ export function ChatInput({
                   >
                     <PlaneIcon className="mr-2 size-4" />
                     <span>/travel - Switch to Travel Planning Expert</span>
+                  </PromptInputCommandItem>
+                  <PromptInputCommandItem
+                    onSelect={() => handleCommandSelect('langfuse')}
+                  >
+                    <SparklesIcon className="mr-2 size-4" />
+                    <span>/langfuse - Switch to Langfuse Prompt Sample</span>
                   </PromptInputCommandItem>
                 </PromptInputCommandGroup>
                 <PromptInputCommandGroup heading="Actions">
