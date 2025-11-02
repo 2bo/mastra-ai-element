@@ -5,6 +5,7 @@ import { PinoLogger } from '@mastra/loggers';
 import { codeReviewAgent } from './agents/code-review-agent';
 import { financialAnalystAgent } from './agents/financial-analyst-agent';
 import { langfuseManagedAgent } from './agents/langfuse-managed-agent';
+import { simpleTimezoneLangfuseAgent } from './agents/simple-timezone-langfuse-agent';
 import { travelPlanningAgent } from './agents/travel-planning-agent';
 import { createLangfuseExporter } from './observability/langfuse';
 import {
@@ -26,6 +27,7 @@ const createMastra = () => {
       codeReviewAgent,
       travelPlanningAgent,
       langfuseManagedAgent,
+      simpleTimezoneLangfuseAgent,
     },
     scorers: {
       toolCallAppropriatenessScorer,
