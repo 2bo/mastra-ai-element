@@ -1,24 +1,31 @@
+import { SamplingStrategyType } from '@mastra/core/ai-tracing';
 import { Mastra } from '@mastra/core/mastra';
-import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
-import { weatherWorkflow } from './workflows/weather-workflow';
-import { financialAnalystAgent } from './agents/financial-analyst-agent';
+import { PinoLogger } from '@mastra/loggers';
 import { codeReviewAgent } from './agents/code-review-agent';
+import { financialAnalystAgent } from './agents/financial-analyst-agent';
+import { langfuseManagedAgent } from './agents/langfuse-managed-agent';
 import { travelPlanningAgent } from './agents/travel-planning-agent';
+import { createLangfuseExporter } from './observability/langfuse';
 import {
-  toolCallAppropriatenessScorer,
   completenessScorer,
+  toolCallAppropriatenessScorer,
   translationScorer,
 } from './scorers/weather-scorer';
+import { weatherWorkflow } from './workflows/weather-workflow';
 
 // Create Mastra instance with explicit typing
 const createMastra = () => {
-  return new Mastra({
+  // Initialize Langfuse AI Tracing Exporter (optional - only if env vars are set)
+  const langfuseExporter = createLangfuseExporter();
+
+  const baseConfig = {
     workflows: { weatherWorkflow },
     agents: {
       financialAnalystAgent,
       codeReviewAgent,
       travelPlanningAgent,
+      langfuseManagedAgent,
     },
     scorers: {
       toolCallAppropriatenessScorer,
@@ -27,22 +34,39 @@ const createMastra = () => {
     },
     storage: new LibSQLStore({
       // stores observability, scores, ... into memory storage, if it needs to persist, change to file:../mastra.db
-      url: ':memory:',
+      url: 'file:./mastra.db', // Storage
     }),
     logger: new PinoLogger({
       name: 'Mastra',
       level: 'info',
     }),
-    telemetry: {
-      // Telemetry is deprecated and will be removed in the Nov 4th release
-      enabled: false,
-    },
-    observability: {
-      // Enables DefaultExporter and CloudExporter for AI tracing
-      // Disabled to prevent "AI Tracing instance already registered" error in dev mode
-      default: { enabled: false },
-    },
-  });
+  };
+
+  // Add Langfuse AI Tracing if available, otherwise disable observability
+  if (langfuseExporter) {
+    console.log('[Mastra] Langfuse AI Tracing enabled');
+
+    return new Mastra({
+      ...baseConfig,
+      observability: {
+        configs: {
+          langfuse: {
+            serviceName: 'mastra-langfuse-demo',
+            sampling: { type: SamplingStrategyType.ALWAYS },
+            exporters: [langfuseExporter],
+          },
+        },
+      },
+    });
+  } else {
+    // Fallback: disable observability if Langfuse is not available
+    return new Mastra({
+      ...baseConfig,
+      observability: {
+        default: { enabled: true },
+      },
+    });
+  }
 };
 
 // Use a singleton pattern to prevent recreation on hot reload in dev mode

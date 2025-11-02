@@ -62,6 +62,8 @@ export default function ChatPage() {
       'Code quality specialist - Review code for security, performance, and best practices',
     travelPlanningAgent:
       'Travel expert - Plan itineraries, suggest destinations, and provide travel tips',
+    langfuseManagedAgent:
+      'Langfuse Prompt Sample - AI assistant with prompts managed by Langfuse',
   };
 
   const agentDescription =
